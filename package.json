@@ -1,12 +1,16 @@
 {
   "name": "seen-and-gone",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "A room-code chat where every message burns away right after it is seen. No storage, no history.",
-  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "db:local": "wrangler d1 execute DB --local --file=./schema.sql",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
   },
   "engines": {
     "node": ">=18"
@@ -16,7 +20,8 @@
     "ephemeral",
     "vanishing-messages",
     "self-destruct",
-    "privacy"
+    "privacy",
+    "cloudflare-workers"
   ],
   "license": "MIT"
 }
