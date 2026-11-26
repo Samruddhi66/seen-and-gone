@@ -1,6 +1,6 @@
 'use strict';
 
-/* Seen & Gone — client. Rooms live on the server in memory only. */
+/* Seen & Gone — client. Rooms live on the server only while people are inside. */
 
 const els = {
   joinScreen: document.getElementById('joinScreen'),
@@ -21,15 +21,19 @@ const els = {
   ttlLabel: document.getElementById('ttlLabel'),
 };
 
+const POLL_MS = 1200;
+
 const state = {
   room: '',
   name: '',
   uid: randomId(),
   burnAfter: 5000,
-  source: null,
-  nodes: new Map(), // id -> { el, timer, deleteAt }
+  loop: null,
+  polls: 0,
+  polling: false,
+  online: true,
+  nodes: new Map(), // id -> { el, status, timer, deleteAt }
   seenSent: new Set(),
-  pendingTimer: null,
 };
 
 function randomId() {
@@ -72,31 +76,37 @@ function fail(message) {
 /* ---------- room lifecycle ---------- */
 
 function join(room, name) {
-  leave();
+  leave({ tellServer: false });
   state.room = room;
   state.name = name;
-  state.seenSent.clear();
-  els.messages.querySelectorAll('.msg').forEach((el) => el.remove());
-  els.emptyState.hidden = false;
-  els.joinError.hidden = true;
-  els.ttlLabel.textContent = String(clock(state.burnAfter));
+  state.polls = 0;
   showChat();
 
-  const params = new URLSearchParams({ room, uid: state.uid, name });
-  state.source = new EventSource(`/api/stream?${params.toString()}`);
-
-
-  state.source.addEventListener('msg', (event) => onMessage(JSON.parse(event.data)));
-  state.source.addEventListener('seen', (event) => onSeen(JSON.parse(event.data)));
-  state.source.addEventListener('burn', (event) => onBurn(JSON.parse(event.data)));
-  state.source.addEventListener('presence', (event) => onPresence(JSON.parse(event.data)));
+  poll();
+  state.loop = setInterval(poll, POLL_MS);
 }
 
-function leave() {
-  if (state.source) {
-    state.source.close();
-    state.source = null;
+function leave(options) {
+  const tellServer = !options || options.tellServer !== false;
+
+  if (state.loop) {
+    clearInterval(state.loop);
+    state.loop = null;
   }
+  if (tellServer && state.room) {
+    const body = JSON.stringify({ room: state.room, uid: state.uid });
+    try {
+      navigator.sendBeacon('/api/leave', body);
+    } catch (err) {
+      fetch('/api/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    }
+  }
+
   for (const entry of state.nodes.values()) {
     if (entry.timer) clearInterval(entry.timer);
   }
@@ -106,37 +116,82 @@ function leave() {
   els.emptyState.hidden = false;
 }
 
-/* ---------- messages ---------- */
+/* ---------- talking to the server ---------- */
 
-function onMessage(message) {
-  if (state.nodes.has(message.id)) return;
-  renderMessage(message);
+async function poll() {
+  if (!state.room || state.polling) return;
+  state.polling = true;
+  const room = state.room;
 
-  if (message.from === state.uid) return;
-
-  // Mark as seen once it is actually on screen (and the tab is in front).
-  const markSeen = () => {
-    if (document.visibilityState !== 'visible') return;
-    document.removeEventListener('visibilitychange', markSeen);
-    markSeenOnServer(message.id);
-  };
-  if (document.visibilityState === 'visible') {
-    setTimeout(markSeen, 700);
-  } else {
-    document.addEventListener('visibilitychange', markSeen);
+  try {
+    const beat = state.polls % 4 === 0 ? '1' : '0';
+    state.polls += 1;
+    const params = new URLSearchParams({ room, uid: state.uid, name: state.name, beat });
+    const response = await fetch(`/api/poll?${params.toString()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error('poll failed');
+    const data = await response.json();
+    if (state.room !== room) return;
+    applyState(data);
+    setLinkState(true);
+  } catch (err) {
+    setLinkState(false);
+  } finally {
+    state.polling = false;
   }
 }
 
-function markSeenOnServer(id) {
+function applyState(data) {
+  updatePresence(data.people || []);
+  if (data.burnDefault && state.burnDefault !== data.burnDefault) {
+    state.burnDefault = data.burnDefault;
+  }
+
+  const ids = new Set();
+  for (const message of data.messages || []) {
+    ids.add(message.id);
+
+    if (!state.nodes.has(message.id)) {
+      renderMessage(message);
+      if (message.from !== state.uid) markSeenSoon(message.id);
+    } else if (message.from === state.uid && message.seenAt) {
+      applySeen(message.id, message.deleteAt);
+    }
+  }
+
+  for (const id of [...state.nodes.keys()]) {
+    if (!ids.has(id)) removeMessage(id);
+  }
+}
+
+function setLinkState(online) {
+  if (state.online === online) return;
+  state.online = online;
+  if (!online) els.presence.textContent = 'reconnecting…';
+}
+
+/* ---------- messages ---------- */
+
+function markSeenSoon(id) {
   if (state.seenSent.has(id)) return;
   state.seenSent.add(id);
-  fetch('/api/seen', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ room: state.room, id, uid: state.uid }),
-  }).catch(() => {
-    /* the message may already be gone — nothing to retry */
-  });
+
+  const send = () => {
+    if (document.visibilityState !== 'visible') {
+      setTimeout(send, 1500);
+      return;
+    }
+    fetch('/api/seen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room: state.room, id, uid: state.uid }),
+    })
+      .then(() => poll())
+      .catch(() => {
+        state.seenSent.delete(id);
+      });
+  };
+
+  setTimeout(send, 700);
 }
 
 function renderMessage(message) {
@@ -163,22 +218,17 @@ function renderMessage(message) {
   els.messages.appendChild(wrap);
   els.messages.scrollTop = els.messages.scrollHeight;
 
-  const entry = { el: wrap, status, timer: null, deleteAt: null };
-  state.nodes.set(message.id, entry);
+  state.nodes.set(message.id, { el: wrap, status, timer: null, deleteAt: null });
 
   if (mine && message.seenAt) applySeen(message.id, message.deleteAt);
 }
 
-function onSeen(payload) {
-  applySeen(payload.id, payload.deleteAt);
-}
-
 function applySeen(id, deleteAt) {
   const entry = state.nodes.get(id);
-  if (!entry) return;
+  if (!entry || entry.timer) return;
 
   entry.deleteAt = deleteAt;
-  entry.el.classList.add('is-seen');
+  entry.el.classList.add('is-seen', 'flash');
 
   const tick = () => {
     const left = (entry.deleteAt || 0) - Date.now();
@@ -190,29 +240,27 @@ function applySeen(id, deleteAt) {
   };
 
   tick();
-  if (entry.timer) clearInterval(entry.timer);
   entry.timer = setInterval(tick, 250);
-  entry.el.classList.add('flash');
 }
 
-function onBurn(payload) {
-  const entry = state.nodes.get(payload.id);
+function removeMessage(id) {
+  const entry = state.nodes.get(id);
   if (!entry) return;
 
   if (entry.timer) clearInterval(entry.timer);
+  state.nodes.delete(id);
+  state.seenSent.delete(id);
+
   entry.status.textContent = 'gone';
   entry.el.classList.add('burning');
 
   setTimeout(() => {
     entry.el.remove();
-    state.nodes.delete(payload.id);
-    state.seenSent.delete(payload.id);
     if (!els.messages.querySelector('.msg')) els.emptyState.hidden = false;
   }, 450);
 }
 
-function onPresence(payload) {
-  const people = payload.people || [];
+function updatePresence(people) {
   const others = people.filter((p) => p.uid !== state.uid).length;
   els.presence.textContent = others > 0 ? `${people.length} here` : 'waiting for the other person…';
   els.presence.classList.toggle('alone', others === 0);
@@ -241,7 +289,9 @@ async function send(text) {
       const data = await response.json().catch(() => ({}));
       els.messageInput.value = trimmed;
       toast(data.error || 'Could not send that. Try again.');
+      return;
     }
+    poll();
   } catch (err) {
     els.messageInput.value = trimmed;
     toast('Connection lost. Reconnecting…');
@@ -291,10 +341,21 @@ els.copyBtn.addEventListener('click', async () => {
 
 els.leaveBtn.addEventListener('click', () => {
   leave();
+  state.room = '';
   history.replaceState(null, '', location.pathname);
   showJoin();
+});
+
+window.addEventListener('pagehide', () => {
+  if (state.room) leave();
 });
 
 const fromUrl = new URLSearchParams(location.search).get('room');
 if (fromUrl) els.roomInput.value = normalizeRoom(fromUrl);
 els.roomInput.focus();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}

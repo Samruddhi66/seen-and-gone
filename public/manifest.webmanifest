@@ -1,0 +1,25 @@
+{
+  "name": "Seen & Gone",
+  "short_name": "Seen & Gone",
+  "description": "A chat where every message burns away right after it is seen.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08080f",
+  "theme_color": "#08080f",
+  "icons": [
+    {
+      "src": "/icons/icon-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}
