@@ -5,7 +5,22 @@ the message burns away for everyone. No chat history, ever.
 
 ### ▶️ Live app: **https://seen-and-gone-8c270f.freebuff.site**
 
+### 📱 Android APK: **[download seen-and-gone.apk](https://github.com/Samruddhi66/seen-and-gone/releases/latest/download/seen-and-gone.apk)**
+
 Open it on two phones (or two browser tabs), type the same room code, and start talking.
+
+## Install the Android app
+
+1. Tap the APK link above (it always points at the newest build).
+2. Open the downloaded file and allow "install from this source" if Android asks.
+3. Open **Seen & Gone** from your home screen.
+
+The APK is a thin Android shell (WebView) around the hosted app, so it always runs the newest
+version. It is built automatically by GitHub Actions on every push that touches `android/` —
+see [`.github/workflows/android-apk.yml`](.github/workflows/android-apk.yml) and the
+[releases page](https://github.com/Samruddhi66/seen-and-gone/releases).
+
+**iPhone:** open the live link in Safari → Share → **Add to Home Screen**.
 
 ## How it works
 
@@ -15,17 +30,6 @@ Open it on two phones (or two browser tabs), type the same room code, and start 
 4. Send messages. The moment the other person's screen shows a message, it starts that sender's
    countdown, then it is deleted — on their screen, on your screen and on the server.
 5. Leave the room and everything about it is wiped.
-
-## Use it like an app (no APK needed)
-
-Seen & Gone is a web app, so you install it straight from the browser — no Play Store, no APK file:
-
-- **Android (Chrome):** open the live link → ⋮ menu → **Add to Home screen / Install app**.
-- **iPhone (Safari):** open the live link → Share → **Add to Home Screen**.
-
-It then opens full-screen from your home screen with its own flame icon, exactly like a native app.
-There is no `.apk` in this repository: an APK has to be compiled and signed with the Android SDK,
-which this project does not ship — the home-screen install gives you the same result without it.
 
 ## Run it yourself
 
@@ -43,6 +47,13 @@ To put it on your own Cloudflare account:
 npx wrangler d1 create seen-and-gone     # copy the id into wrangler.jsonc
 npx wrangler d1 execute DB --remote --file=./schema.sql
 npx wrangler deploy
+```
+
+To build the Android APK yourself you need the Android SDK and JDK 17:
+
+```bash
+cd android && gradle assembleDebug
+# → app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ## How it stays history-free
@@ -66,6 +77,8 @@ public/index.html        → join screen + chat UI
 public/app.js            → polling client, seen tracking, burn countdown
 public/style.css         → the dark "burning paper" theme
 public/manifest.webmanifest, public/sw.js, public/icons/  → installable app shell
+android/                 → the WebView Android app (Gradle project)
+.github/workflows/       → builds the APK and attaches it to a release
 ```
 
 ## License
