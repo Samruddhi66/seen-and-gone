@@ -1,31 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Seen and Gone flame">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512" role="img" aria-label="Seen and Gone logo">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#161020" />
-      <stop offset="1" stop-color="#08080f" />
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#211631" />
+      <stop offset="0.55" stop-color="#0d0a17" />
+      <stop offset="1" stop-color="#07070d" />
     </linearGradient>
-    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffd166" />
-      <stop offset="0.45" stop-color="#ffb03a" />
-      <stop offset="0.75" stop-color="#ff7a45" />
-      <stop offset="1" stop-color="#ff4d6d" />
+    <linearGradient id="flame" x1="0.25" y1="0" x2="0.75" y2="1">
+      <stop offset="0" stop-color="#ffe08a" />
+      <stop offset="0.35" stop-color="#ffb03a" />
+      <stop offset="0.7" stop-color="#ff7a45" />
+      <stop offset="1" stop-color="#ff3f6e" />
     </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.55" r="0.5">
-      <stop offset="0" stop-color="#ff7a45" stop-opacity="0.45" />
-      <stop offset="1" stop-color="#ff7a45" stop-opacity="0" />
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffdf2" />
+      <stop offset="1" stop-color="#ffe6ab" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.62" r="0.46">
+      <stop offset="0" stop-color="#ff7a45" stop-opacity="0.55" />
+      <stop offset="0.65" stop-color="#ff4d6d" stop-opacity="0.16" />
+      <stop offset="1" stop-color="#ff4d6d" stop-opacity="0" />
     </radialGradient>
   </defs>
 
-  <rect width="512" height="512" rx="112" fill="url(#bg)" />
-  <circle cx="256" cy="286" r="176" fill="url(#glow)" />
+  <rect width="108" height="108" rx="25" fill="url(#tile)" />
+  <rect x="0.75" y="0.75" width="106.5" height="106.5" rx="24.4" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1.5" />
+  <circle cx="54" cy="61" r="35" fill="url(#glow)" />
 
   <path
-    d="M256 104c44 58 92 92 92 158 0 64-42 112-92 112s-92-48-92-112c0-42 20-72 42-100 8 26 24 40 36 32 14-10 10-46-2-74-5-13 4-22 16-16z"
+    d="M54 25.5c6 8.5 18 16.5 18 29.5 0 13-8 21-18 21s-18-8-18-21c0-8 5-13 9-19 1.5 5 5 7.5 6.5 6 1.7-1.7-0.5-9-1.5-12-1-2.5 2-5 4-4.5z"
     fill="url(#flame)"
   />
   <path
-    d="M256 238c22 28 40 46 40 76 0 30-20 54-40 54s-40-24-40-54c0-20 12-36 24-52 2 18 12 26 20 20 9-7 0-30-4-44z"
-    fill="#fff3d6"
-    opacity="0.85"
+    d="M54 51.5c3 4.2 7 8.2 7 13.4 0 5.4-3.2 8.6-7 8.6s-7-3.2-7-8.6c0-4.2 3-7.4 5-10.4 0.4 3 3 4.4 4 3 1-1.4-1.4-4.6-2-6z"
+    fill="url(#core)"
+    opacity="0.95"
   />
 </svg>
