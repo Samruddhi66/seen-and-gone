@@ -39,6 +39,29 @@
             <input id="nameInput" name="name" type="text" placeholder="Anonymous" maxlength="24" />
           </label>
 
+          <div class="field">
+            <span>Burn after seen</span>
+            <div class="chip-row" id="burnOptions" role="radiogroup" aria-label="Burn time after a message is seen">
+              <label class="chip">
+                <input type="radio" name="burnAfter" value="3000" />
+                <span>3s</span>
+              </label>
+              <label class="chip">
+                <input type="radio" name="burnAfter" value="5000" checked />
+                <span>5s</span>
+              </label>
+              <label class="chip">
+                <input type="radio" name="burnAfter" value="7000" />
+                <span>7s</span>
+              </label>
+              <label class="chip">
+                <input type="radio" name="burnAfter" value="9000" />
+                <span>9s</span>
+              </label>
+            </div>
+            <p class="hint">Applies to the messages you send.</p>
+          </div>
+
           <button type="submit" class="primary">Enter room</button>
           <p id="joinError" class="error" role="alert" hidden></p>
         </form>
@@ -81,7 +104,7 @@
           />
           <button type="submit" class="send" aria-label="Send">➤</button>
         </form>
-        <p class="footnote">Burns ~<span id="ttlLabel">8</span>s after being read • reload = everything gone</p>
+        <p class="footnote">Burns ~<span id="ttlLabel">5</span>s after being read • reload = everything gone</p>
       </section>
     </main>
 

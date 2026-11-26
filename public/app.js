@@ -8,6 +8,7 @@ const els = {
   joinForm: document.getElementById('joinForm'),
   roomInput: document.getElementById('roomInput'),
   nameInput: document.getElementById('nameInput'),
+  burnOptions: document.getElementById('burnOptions'),
   joinError: document.getElementById('joinError'),
   roomLabel: document.getElementById('roomLabel'),
   presence: document.getElementById('presence'),
@@ -24,9 +25,9 @@ const state = {
   room: '',
   name: '',
   uid: randomId(),
-  ttl: 8000,
+  burnAfter: 5000,
   source: null,
-  nodes: new Map(), // id -> { el, status, timer, deleteAt }
+  nodes: new Map(), // id -> { el, timer, deleteAt }
   seenSent: new Set(),
   pendingTimer: null,
 };
@@ -52,7 +53,7 @@ function showChat() {
   els.joinScreen.hidden = true;
   els.chatScreen.hidden = false;
   els.roomLabel.textContent = state.room;
-  els.ttlLabel.textContent = String(clock(state.ttl));
+  els.ttlLabel.textContent = String(clock(state.burnAfter));
   els.messageInput.focus();
 }
 
@@ -78,16 +79,12 @@ function join(room, name) {
   els.messages.querySelectorAll('.msg').forEach((el) => el.remove());
   els.emptyState.hidden = false;
   els.joinError.hidden = true;
+  els.ttlLabel.textContent = String(clock(state.burnAfter));
   showChat();
 
   const params = new URLSearchParams({ room, uid: state.uid, name });
   state.source = new EventSource(`/api/stream?${params.toString()}`);
 
-  state.source.addEventListener('hello', (event) => {
-    const data = JSON.parse(event.data);
-    state.ttl = data.ttl || state.ttl;
-    els.ttlLabel.textContent = String(clock(state.ttl));
-  });
 
   state.source.addEventListener('msg', (event) => onMessage(JSON.parse(event.data)));
   state.source.addEventListener('seen', (event) => onSeen(JSON.parse(event.data)));
@@ -157,9 +154,10 @@ function renderMessage(message) {
   bubble.className = 'bubble';
   bubble.textContent = message.text;
 
+  const burnSeconds = clock(message.burnAfter || state.burnAfter);
   const status = document.createElement('div');
   status.className = 'status';
-  status.textContent = mine ? 'sent' : 'unread';
+  status.textContent = mine ? `sent • burns ${burnSeconds}s after read` : 'unread';
 
   wrap.append(author, bubble, status);
   els.messages.appendChild(wrap);
@@ -231,7 +229,13 @@ async function send(text) {
     const response = await fetch('/api/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ room: state.room, text: trimmed, uid: state.uid, name: state.name }),
+      body: JSON.stringify({
+        room: state.room,
+        text: trimmed,
+        uid: state.uid,
+        name: state.name,
+        burnAfter: state.burnAfter,
+      }),
     });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
@@ -264,6 +268,8 @@ els.joinForm.addEventListener('submit', (event) => {
   const room = normalizeRoom(els.roomInput.value);
   if (room.length < 2) return fail('Use at least 2 letters or numbers for the room code.');
   const name = els.nameInput.value.trim().slice(0, 24);
+  const picked = els.burnOptions.querySelector('input[name="burnAfter"]:checked');
+  state.burnAfter = picked ? Number(picked.value) : 5000;
   history.replaceState(null, '', `?room=${encodeURIComponent(room)}`);
   join(room, name);
 });
