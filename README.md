@@ -6,10 +6,11 @@ the message burns away for everyone. No database, no logs, no history.
 ## How it works
 
 1. Open the app, type a **room code** (any word you and your friend agree on, e.g. `chai-42`).
-2. Your friend opens the same page, types the same room code.
-3. Send messages. As soon as the other person's screen shows a message, it starts a countdown
-   (8 seconds by default) and then it is deleted — on their screen, on your screen and on the server.
-4. Close the tab or leave the room and everything about that room is wiped server-side.
+2. Pick how long your messages should survive after being read: **3s, 5s, 7s or 9s**.
+3. Your friend opens the same page, picks their own burn time, and types the same room code.
+4. Send messages. As soon as the other person's screen shows a message, it starts that sender's
+   countdown and then it is deleted — on their screen, on your screen and on the server.
+5. Close the tab or leave the room and everything about that room is wiped server-side.
 
 Because the messages only ever exist in the server's memory while both people are in the room,
 there is no chat history to scroll back to, and nothing to recover afterwards.
@@ -25,11 +26,11 @@ No dependencies, no build step — it's plain Node.js (18+) with Server-Sent Eve
 
 Optional environment variables:
 
-| Variable      | Default   | Meaning                                            |
-| ------------- | --------- | -------------------------------------------------- |
-| `PORT`        | `3000`    | Port to listen on                                  |
-| `HOST`        | `0.0.0.0` | Interface to bind                                  |
-| `SEEN_TTL_MS` | `8000`    | Milliseconds between "seen" and the message burning |
+| Variable      | Default | Meaning                                            |
+| ------------- | ------- | -------------------------------------------------- |
+| `PORT`        | `3000`  | Port to listen on                                  |
+| `HOST`        | `0.0.0.0` | Interface to bind                                |
+| `SEEN_TTL_MS` | `5000`  | Default burn delay when a message carries no choice |
 
 ## Privacy notes
 
