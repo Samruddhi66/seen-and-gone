@@ -16,7 +16,7 @@ const crypto = require('crypto');
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
-const SEEN_TTL_MS = Math.min(Math.max(Number(process.env.SEEN_TTL_MS) || 8000, 3000), 60000);
+const SEEN_TTL_MS = Math.min(Math.max(Number(process.env.SEEN_TTL_MS) || 5000, 3000), 60000);
 const MAX_TEXT = 500;
 const MAX_MESSAGES_PER_ROOM = 100;
 const MAX_ROOMS = 2000;
@@ -47,6 +47,13 @@ function cleanName(value) {
       .trim()
       .slice(0, 24) || 'Anonymous'
   );
+}
+
+// Each sender picks how long their own message lives after it is read.
+function normalizeBurn(value) {
+  const ms = Math.round(Number(value));
+  if (!Number.isFinite(ms) || ms <= 0) return SEEN_TTL_MS;
+  return Math.min(Math.max(ms, 3000), 60000);
 }
 
 function json(res, status, payload) {
@@ -213,6 +220,7 @@ async function handleSend(req, res) {
     from: String(body.uid || '').slice(0, 40),
     name: cleanName(body.name),
     at: Date.now(),
+    burnAfter: normalizeBurn(body.burnAfter),
     seenAt: null,
     deleteAt: null,
   };
@@ -247,15 +255,16 @@ async function handleSeen(req, res) {
 
   if (message.seenAt) return json(res, 200, { ok: true, deleteAt: message.deleteAt });
 
-  const deleteAt = Date.now() + SEEN_TTL_MS;
+  const ttl = message.burnAfter || SEEN_TTL_MS;
+  const deleteAt = Date.now() + ttl;
   message.seenAt = Date.now();
   message.seenBy = viewer;
   message.deleteAt = deleteAt;
 
-  broadcast(room, 'seen', { id: message.id, seenAt: message.seenAt, deleteAt, deleteIn: SEEN_TTL_MS });
-  schedule(room, SEEN_TTL_MS, () => burnMessage(code, room, message.id));
+  broadcast(room, 'seen', { id: message.id, seenAt: message.seenAt, deleteAt, deleteIn: ttl });
+  schedule(room, ttl, () => burnMessage(code, room, message.id));
 
-  return json(res, 200, { ok: true, deleteAt, deleteIn: SEEN_TTL_MS });
+  return json(res, 200, { ok: true, deleteAt, deleteIn: ttl });
 }
 
 function serveStatic(req, res, pathname) {
