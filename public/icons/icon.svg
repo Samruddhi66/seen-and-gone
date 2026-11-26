@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Seen and Gone flame">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#161020" />
+      <stop offset="1" stop-color="#08080f" />
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd166" />
+      <stop offset="0.45" stop-color="#ffb03a" />
+      <stop offset="0.75" stop-color="#ff7a45" />
+      <stop offset="1" stop-color="#ff4d6d" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.55" r="0.5">
+      <stop offset="0" stop-color="#ff7a45" stop-opacity="0.45" />
+      <stop offset="1" stop-color="#ff7a45" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <circle cx="256" cy="286" r="176" fill="url(#glow)" />
+
+  <path
+    d="M256 104c44 58 92 92 92 158 0 64-42 112-92 112s-92-48-92-112c0-42 20-72 42-100 8 26 24 40 36 32 14-10 10-46-2-74-5-13 4-22 16-16z"
+    fill="url(#flame)"
+  />
+  <path
+    d="M256 238c22 28 40 46 40 76 0 30-20 54-40 54s-40-24-40-54c0-20 12-36 24-52 2 18 12 26 20 20 9-7 0-30-4-44z"
+    fill="#fff3d6"
+    opacity="0.85"
+  />
+</svg>
